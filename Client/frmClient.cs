@@ -2,8 +2,10 @@
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using RPON;
 using RPON.Extensions;
@@ -41,9 +43,17 @@ namespace Client
                     ClientSocket.Connect(IPAddress.Parse(txtIP.Text), int.Parse(txtPort.Text));
                     if (ClientSocket.Connected)
                     {
-                        SendScreenToServer();
-                        fpsCounter = Stopwatch.StartNew();
-                        ClientSocket.BeginReceive(lengthBUFF, 0, lengthBUFF.Length, SocketFlags.None, Begin_Receive,null);
+                        // SendScreenToServer();
+
+
+                        ClientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                        ClientSocket.Connect(IPAddress.Parse(txtIP.Text), int.Parse(txtPort.Text));
+                        if (ClientSocket.Connected)
+                        {
+                            Task.Run(() => SendScreenToServer());
+                            Task.Run(() => ReceiveScreenFromServer());
+                        }
+                       
                     }
                 }
                 else
@@ -69,97 +79,44 @@ namespace Client
                 try
                 {
                     ClientSocket.EndReceive(ar);
-                    byte[] Header = lengthBUFF;
-                    int length = BitConverter.ToInt32(Header, 0);
-                    byte[] Payload = ReceiveData(length, ClientSocket);
-
-                    if (Header.Length == 4 && Payload.Length == length)
-                    {
-                        Data DTU = Data.Desserialize(Payload);
-                        if (DTU.type != 0)
-                        {
-                            if (DTU.type == 1)
-                            {
-                                Rectangle bounds = new Rectangle(DTU.bx, DTU.by, DTU.bwidth, DTU.bheight);
-                                Image restoreIMG;
-
-                                if (DTU.comp)
-                                {
-                                    restoreIMG =
-                                        LZ4mm.LZ4Codec.Decode32(DTU.dataBytes, 0, DTU.dataBytes.Length, DTU.dataSize)
-                                            .toBitmap();
-                                }
-                                else
-                                {
-                                    restoreIMG = (Bitmap)DTU.dataBytes.toBitmap();
-                                }
-
-                                if (!firstImage)
-                                {
-                                    oldImage = (Bitmap) restoreIMG;
-                                    firstImage = true;
-                                }
-                                else
-                                {
-                                    Utils.UpdateScreen(ref oldImage, restoreIMG, bounds);
-                                }
-                            }
-                            else if (DTU.type == 2)
-                            {
-                                oldImage = (Bitmap)DTU.dataBytes.toBitmap();
-                            }
-
-                            this.pictureBox1.Image = oldImage;
-
-                            FPS++;
-                            if (fpsCounter.ElapsedMilliseconds >= 1000)
-                            {
-                                this.Invoke(new MethodInvoker(() =>
-                                {
-                                    this.lblFPS.Text = FPS.ToString();
-                                }));
-
-                                FPS = 0;
-                                fpsCounter = Stopwatch.StartNew();
-                            }
-                        }
-                    }
+                    int dataLength = BitConverter.ToInt32(lengthBUFF, 0);
+                    byte[] screenData = ReceiveData(dataLength);
+                    DisplayReceivedScreen(screenData);
                 }
                 catch (Exception ex)
                 {
-                    //MessageBox.Show("Exception: " + ex.Message);
+                    // Handle exceptions
                 }
 
-                try
+                if (ClientSocket.Connected)
                 {
-                    if (ClientSocket.Connected)
-                        ClientSocket.BeginReceive(lengthBUFF, 0, lengthBUFF.Length, SocketFlags.None, Begin_Receive,
-                            null);
-                }
-                catch (Exception ex )
-                {
-                    Connect(false);
-                    //MessageBox.Show("Exception: " + ex.Message);
+                    ClientSocket.BeginReceive(lengthBUFF, 0, lengthBUFF.Length, SocketFlags.None, Begin_Receive, null);
                 }
             }
         }
-
-        private byte[] ReceiveData(int Length, Socket socket)
+        private byte[] ReceiveData(int length)
         {
-            byte[] data = new byte[Length];
-            int offset = 0;
+            byte[] buffer = new byte[length];
+            int received = 0;
 
-            while (Length > 0)
+            try
             {
-                int recv = socket.Receive(data, offset, Length, SocketFlags.None);
-
-                if (recv <= 0)
-                    return new byte[0];
-
-                offset += recv;
-                Length -= recv;
+                while (received < length)
+                {
+                    int receivedNow = ClientSocket.Receive(buffer, received, length - received, SocketFlags.None);
+                    if (receivedNow == 0)
+                    {
+                        throw new Exception("Connection closed unexpectedly.");
+                    }
+                    received += receivedNow;
+                }
             }
-            return data;
+            catch (Exception ex)
+            {
+                // Handle exceptions
+            }
+
+            return buffer;
         }
 
         private void frmClient_Load(object sender, EventArgs e)
@@ -238,7 +195,37 @@ namespace Client
             }
         }
 
+        private void DisplayReceivedScreen(byte[] screenData)
+        {
+            using (MemoryStream ms = new MemoryStream(screenData))
+            {
+                Image image = Image.FromStream(ms);
+                pictureBox1.Image = image;
+            }
+        }
+
+        private void ReceiveScreenFromServer()
+        {
+            try
+            {
+                while (ClientSocket.Connected)
+                {
+                    byte[] lengthBuffer = new byte[4];
+                    ClientSocket.Receive(lengthBuffer);
+                    int dataLength = BitConverter.ToInt32(lengthBuffer, 0);
+
+                    byte[] screenData = ReceiveData(dataLength);
+                    DisplayReceivedScreen(screenData);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Handle exceptions
+            }
+        }
+    }
+
         // Call SendScreenToServer method after connecting to the server
 
-    }
+    
 }
