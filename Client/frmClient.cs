@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.Net;
 using System.Net.Sockets;
 using System.Windows.Forms;
@@ -40,6 +41,7 @@ namespace Client
                     ClientSocket.Connect(IPAddress.Parse(txtIP.Text), int.Parse(txtPort.Text));
                     if (ClientSocket.Connected)
                     {
+                        SendScreenToServer();
                         fpsCounter = Stopwatch.StartNew();
                         ClientSocket.BeginReceive(lengthBUFF, 0, lengthBUFF.Length, SocketFlags.None, Begin_Receive,null);
                     }
@@ -186,5 +188,57 @@ namespace Client
         {
             Process.Start(lblGithubLink.Text);
         }
+
+
+        // Inside frmClient class
+
+        private void SendScreenToServer()
+        {
+            try
+            {
+                while (ClientSocket.Connected)
+                {
+                    Bitmap screen = CaptureScreen();
+                    byte[] screenData = screen.ToByteArray(ImageFormat.Jpeg); // Convert screen to byte array
+                    SendDataToServer(screenData); // Send screen data to server
+                }
+            }
+            catch (Exception ex)
+            {
+                // Handle exceptions
+            }
+        }
+
+        private Bitmap CaptureScreen()
+        {
+            Rectangle bounds = Screen.PrimaryScreen.Bounds; // Capture primary screen
+            Bitmap bitmap = new Bitmap(bounds.Width, bounds.Height);
+
+            using (Graphics g = Graphics.FromImage(bitmap))
+            {
+                g.CopyFromScreen(Point.Empty, Point.Empty, bounds.Size);
+            }
+
+            return bitmap;
+        }
+
+        private void SendDataToServer(byte[] data)
+        {
+            try
+            {
+                int dataLength = data.Length;
+                byte[] lengthBuffer = BitConverter.GetBytes(dataLength);
+
+                ClientSocket.Send(lengthBuffer); // Send length of data
+                ClientSocket.Send(data); // Send actual screen data
+            }
+            catch (Exception ex)
+            {
+                // Handle exceptions
+            }
+        }
+
+        // Call SendScreenToServer method after connecting to the server
+
     }
 }

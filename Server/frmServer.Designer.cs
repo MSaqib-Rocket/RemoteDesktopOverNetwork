@@ -81,10 +81,12 @@
             this.lblPacketDrop = new System.Windows.Forms.Label();
             this.label11 = new System.Windows.Forms.Label();
             this.tbPacketDrop = new System.Windows.Forms.TrackBar();
+            this.pictureBox1 = new System.Windows.Forms.PictureBox();
             ((System.ComponentModel.ISupportInitialize)(this.pcbFrame)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.tbDelay)).BeginInit();
             this.tsCredits.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.tbPacketDrop)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
             // 
             // btnStart
@@ -179,7 +181,7 @@
             this.lblStatus.ForeColor = System.Drawing.Color.Red;
             this.lblStatus.Location = new System.Drawing.Point(108, 109);
             this.lblStatus.Name = "lblStatus";
-            this.lblStatus.Size = new System.Drawing.Size(95, 16);
+            this.lblStatus.Size = new System.Drawing.Size(94, 16);
             this.lblStatus.TabIndex = 9;
             this.lblStatus.Text = "Disconected";
             // 
@@ -460,7 +462,7 @@
             this.cbAlgorithm.ForeColor = System.Drawing.Color.Black;
             this.cbAlgorithm.Location = new System.Drawing.Point(297, 106);
             this.cbAlgorithm.Name = "cbAlgorithm";
-            this.cbAlgorithm.Size = new System.Drawing.Size(134, 20);
+            this.cbAlgorithm.Size = new System.Drawing.Size(133, 20);
             this.cbAlgorithm.TabIndex = 42;
             this.cbAlgorithm.Text = "Activate Algorithm";
             this.cbAlgorithm.UseVisualStyleBackColor = true;
@@ -600,11 +602,20 @@
             this.tbPacketDrop.TickFrequency = 10;
             this.tbPacketDrop.ValueChanged += new System.EventHandler(this.tbPacketDrop_ValueChanged);
             // 
+            // pictureBox1
+            // 
+            this.pictureBox1.Location = new System.Drawing.Point(12, 376);
+            this.pictureBox1.Name = "pictureBox1";
+            this.pictureBox1.Size = new System.Drawing.Size(534, 146);
+            this.pictureBox1.TabIndex = 52;
+            this.pictureBox1.TabStop = false;
+            // 
             // frmServer
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(591, 589);
+            this.Controls.Add(this.pictureBox1);
             this.Controls.Add(this.lblPacketDrop);
             this.Controls.Add(this.label11);
             this.Controls.Add(this.tbPacketDrop);
@@ -664,6 +675,7 @@
             this.tsCredits.ResumeLayout(false);
             this.tsCredits.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.tbPacketDrop)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -724,6 +736,7 @@
         private System.Windows.Forms.Label lblPacketDrop;
         private System.Windows.Forms.Label label11;
         private System.Windows.Forms.TrackBar tbPacketDrop;
+        private System.Windows.Forms.PictureBox pictureBox1;
     }
 }
 
