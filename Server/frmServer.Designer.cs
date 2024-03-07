@@ -531,7 +531,7 @@
             this.toolStripSeparator1,
             this.toolStripLabel2,
             this.lblGithubLink});
-            this.tsCredits.Location = new System.Drawing.Point(0, 564);
+            this.tsCredits.Location = new System.Drawing.Point(0, 786);
             this.tsCredits.Name = "tsCredits";
             this.tsCredits.Size = new System.Drawing.Size(591, 25);
             this.tsCredits.TabIndex = 47;
@@ -604,9 +604,14 @@
             // 
             // pictureBox1
             // 
-            this.pictureBox1.Location = new System.Drawing.Point(12, 376);
+            this.pictureBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.pictureBox1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pictureBox1.Location = new System.Drawing.Point(-19, 336);
             this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(534, 146);
+            this.pictureBox1.Size = new System.Drawing.Size(610, 475);
+            this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
             this.pictureBox1.TabIndex = 52;
             this.pictureBox1.TabStop = false;
             // 
@@ -614,7 +619,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(591, 589);
+            this.ClientSize = new System.Drawing.Size(591, 811);
             this.Controls.Add(this.pictureBox1);
             this.Controls.Add(this.lblPacketDrop);
             this.Controls.Add(this.label11);
@@ -666,7 +671,7 @@
             this.Controls.Add(this.label20);
             this.DoubleBuffered = true;
             this.MaximizeBox = false;
-            this.MaximumSize = new System.Drawing.Size(607, 628);
+            this.MaximumSize = new System.Drawing.Size(607, 850);
             this.Name = "frmServer";
             this.Text = "Server : RemoteDesktopOverNetwork";
             this.Load += new System.EventHandler(this.frmServer_Load);

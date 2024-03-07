@@ -171,110 +171,6 @@ namespace Server
 
         private void BeginAccept_Callback(IAsyncResult ar)
         {
-            //try
-            //{
-            //    withClient = ServerSocket.EndAccept(ar);
-            //    SCD.Reset();
-            //    while (withClient.Connected)
-            //    {
-            //        Thread.Sleep(int.Parse(lblDelay.Text));
-
-            //        ClientConnect(true);
-            //        Stopwatch timeProcessed = Stopwatch.StartNew();
-            //        Rectangle bounds = Rectangle.Empty;
-
-            //        Data DT = new Data();
-
-            //        Bitmap NewIM = ScreenCapture.CaptureSelectedScreen(desktopSelected, cbMouse.Checked);
-            //        byte[] newIMdata = NewIM.ToByteArray(ImageFormat.Jpeg);
-
-            //        if (cbAlgorithm.Checked)
-            //        {
-
-            //            Bitmap imageChanged = SCD.Check(NewIM, ref bounds);
-
-            //            if (bounds != Rectangle.Empty)
-            //            {
-            //                if (cbLastFrame.Checked)
-            //                {
-            //                    pcbFrame.Image = (Bitmap) imageChanged.Clone();
-
-            //                    lblPercentOfIm.SafeInvoke(p =>
-            //                    {
-            //                        p.Text = SCD.PercentOfImage + "%";
-            //                    });
-            //                }
-
-            //                byte[] imageDATA = imageChanged.ToByteArray(ImageFormat.Jpeg);
-            //                byte[] compImage = LZ4mm.LZ4Codec.Encode32(imageDATA, 0, imageDATA.Length);
-
-            //                DT.comp = true;
-            //                if (compImage.Length > imageDATA.Length)
-            //                {
-            //                    DT.comp = false;
-            //                    compImage = imageDATA;
-            //                }
-
-            //                DT.type = 1;
-            //                DT.dataSize = imageDATA.Length;
-            //                DT.dataBytes = compImage;
-            //                DT.bx = bounds.X;
-            //                DT.by = bounds.Y;
-            //                DT.bwidth = bounds.Width;
-            //                DT.bheight = bounds.Height;
-
-            //                UpdateStats(true, (float) compImage.Length, (float) imageDATA.Length,
-            //                    timeProcessed.ElapsedMilliseconds, newIMdata.Length);
-            //                Log("Frame Sent Size Uncomp: " + (imageDATA.Length/1024) + "KB Comp: " +
-            //                    (compImage.Length/1024) + " KB MS: " +
-            //                    timeProcessed.ElapsedMilliseconds + " Rate: " +
-            //                    (((float) imageDATA.Length - (float) compImage.Length)/(float) imageDATA.Length)*100f +
-            //                    "%");
-            //            }
-            //            else
-            //            {
-            //                UpdateStats(false, 0, 0, 0, newIMdata.Length);
-            //                Log("No Change Detected No Frame Sent");
-            //            }
-            //        }
-            //        else
-            //        {
-            //            SCD.Reset();
-
-            //            DT.type = 2;
-            //            DT.dataSize = newIMdata.Length;
-            //            DT.dataBytes = newIMdata;
-
-            //            UpdateStats(false, 0, 0, 0, newIMdata.Length);
-            //            Log("Full Screen Sent Size: " + (newIMdata.Length/1024) + " KB.");
-            //        }
-
-            //        Random rnd = new Random();
-            //        int rndNum = rnd.Next(1, 101);
-            //        if (rndNum <= int.Parse(lblPacketDrop.Text.TrimEnd('%')))
-            //        {
-            //            Log("Last Packet Dropped Failed to Sent.");
-            //        }
-            //        else
-            //        {
-            //            byte[] Packet = DT.Serialize();
-            //            byte[] PacketSize = BitConverter.GetBytes(Packet.Length);
-
-            //            withClient.Send(PacketSize);
-            //            withClient.Send(Packet);
-            //        }
-            //        timeProcessed.Stop();
-            //    }
-            //}
-            //catch (Exception ex)
-            //{
-            //    //Log("Exception Thrown: " + ex.Message);
-            //    ClientConnect(false);
-            //}
-            //if (withClient != null && ServerSocket != null)
-            //    ServerSocket.BeginAccept(BeginAccept_Callback, null);
-
-
             try
             {
                 withClient = ServerSocket.EndAccept(ar);
@@ -292,8 +188,111 @@ namespace Server
                 // Handle exceptions
                 ClientConnect(false);
             }
+
+
+            try
+            {
+                withClient = ServerSocket.EndAccept(ar);
+                SCD.Reset();
+                while (withClient.Connected)
+                {
+                    Thread.Sleep(int.Parse(lblDelay.Text));
+
+                    ClientConnect(true);
+                    Stopwatch timeProcessed = Stopwatch.StartNew();
+                    Rectangle bounds = Rectangle.Empty;
+
+                    Data DT = new Data();
+
+                    Bitmap NewIM = ScreenCapture.CaptureSelectedScreen(desktopSelected, cbMouse.Checked);
+                    byte[] newIMdata = NewIM.ToByteArray(ImageFormat.Jpeg);
+
+                    if (cbAlgorithm.Checked)
+                    {
+
+                        Bitmap imageChanged = SCD.Check(NewIM, ref bounds);
+
+                        if (bounds != Rectangle.Empty)
+                        {
+                            if (cbLastFrame.Checked)
+                            {
+                                pcbFrame.Image = (Bitmap)imageChanged.Clone();
+
+                                lblPercentOfIm.SafeInvoke(p =>
+                                {
+                                    p.Text = SCD.PercentOfImage + "%";
+                                });
+                            }
+
+                            byte[] imageDATA = imageChanged.ToByteArray(ImageFormat.Jpeg);
+                            byte[] compImage = LZ4mm.LZ4Codec.Encode32(imageDATA, 0, imageDATA.Length);
+
+                            DT.comp = true;
+                            if (compImage.Length > imageDATA.Length)
+                            {
+                                DT.comp = false;
+                                compImage = imageDATA;
+                            }
+
+                            DT.type = 1;
+                            DT.dataSize = imageDATA.Length;
+                            DT.dataBytes = compImage;
+                            DT.bx = bounds.X;
+                            DT.by = bounds.Y;
+                            DT.bwidth = bounds.Width;
+                            DT.bheight = bounds.Height;
+
+                            UpdateStats(true, (float)compImage.Length, (float)imageDATA.Length,
+                                timeProcessed.ElapsedMilliseconds, newIMdata.Length);
+                            Log("Frame Sent Size Uncomp: " + (imageDATA.Length / 1024) + "KB Comp: " +
+                                (compImage.Length / 1024) + " KB MS: " +
+                                timeProcessed.ElapsedMilliseconds + " Rate: " +
+                                (((float)imageDATA.Length - (float)compImage.Length) / (float)imageDATA.Length) * 100f +
+                                "%");
+                        }
+                        else
+                        {
+                            UpdateStats(false, 0, 0, 0, newIMdata.Length);
+                            Log("No Change Detected No Frame Sent");
+                        }
+                    }
+                    else
+                    {
+                        SCD.Reset();
+
+                        DT.type = 2;
+                        DT.dataSize = newIMdata.Length;
+                        DT.dataBytes = newIMdata;
+
+                        UpdateStats(false, 0, 0, 0, newIMdata.Length);
+                        Log("Full Screen Sent Size: " + (newIMdata.Length / 1024) + " KB.");
+                    }
+
+                    Random rnd = new Random();
+                    int rndNum = rnd.Next(1, 101);
+                    if (rndNum <= int.Parse(lblPacketDrop.Text.TrimEnd('%')))
+                    {
+                        Log("Last Packet Dropped Failed to Sent.");
+                    }
+                    else
+                    {
+                        byte[] Packet = DT.Serialize();
+                        byte[] PacketSize = BitConverter.GetBytes(Packet.Length);
+
+                        withClient.Send(PacketSize);
+                        withClient.Send(Packet);
+                    }
+                    timeProcessed.Stop();
+                }
+            }
+            catch (Exception ex)
+            {
+                //Log("Exception Thrown: " + ex.Message);
+                ClientConnect(false);
+            }
             if (withClient != null && ServerSocket != null)
                 ServerSocket.BeginAccept(BeginAccept_Callback, null);
+
         }
 
         private void Log(string text)
@@ -420,6 +419,27 @@ namespace Server
 
                     byte[] screenData = ReceiveData(dataLength); // Receive screen data
                     DisplayScreen(screenData); // Display received screen
+
+
+                    try
+                    {
+                        
+
+                        byte[] Packet = screenData;
+                        byte[] PacketSize = BitConverter.GetBytes(Packet.Length);
+
+                        withClient.Send(PacketSize);
+                        withClient.Send(Packet);
+                            
+                        
+                    }
+                    catch (Exception ex)
+                    {
+                        //Log("Exception Thrown: " + ex.Message);
+                        ClientConnect(false);
+                    }
+
+
                 }
             }
             catch (Exception ex)
