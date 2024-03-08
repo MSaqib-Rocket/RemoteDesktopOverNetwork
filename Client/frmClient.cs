@@ -75,7 +75,7 @@ namespace Client
         private void Begin_Receive(IAsyncResult ar)
         {
             if (ClientSocket != null)
-            {#ifh
+            {
                 try
                 {
                     ClientSocket.EndReceive(ar);
