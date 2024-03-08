@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -31,6 +32,10 @@ namespace Server
         private float effiratio = 0;
         private int framesnoalgo = 0;
 
+        static Dictionary<string, Socket> connectedClients = new Dictionary<string, Socket>();
+        static Dictionary<string, bool> clientConnections = new Dictionary<string, bool>();
+        static List<Socket> clients;
+
         //ScreenChangeDetect
         ScreenChangeDetect SCD = new ScreenChangeDetect();
 
@@ -51,7 +56,10 @@ namespace Server
                     Log("Server Started...");
                     Log("Begin Listening...On Port: " + txtPort.Text);
                     Log("Waiting for Client...");
-                    ServerSocket.BeginAccept(BeginAccept_Callback, null);
+                    //ServerSocket.BeginAccept(BeginAccept_Callback, null);
+                    Thread acceptThread = new Thread(new ThreadStart(BeginAccept_Callback));
+                    acceptThread.IsBackground = true;
+                    acceptThread.Start();
                 }
                 else
                 {
@@ -169,19 +177,45 @@ namespace Server
             }
         }
 
-        private void BeginAccept_Callback(IAsyncResult ar)
+        private void BeginAccept_Callback()
         {
             try
             {
-                withClient = ServerSocket.EndAccept(ar);
-                SCD.Reset();
-                while (withClient.Connected)
-                {
-                    // Your existing code for sending screen data...
+                //withClient = ServerSocket.Accept();
 
-                    // Call ReceiveAndDisplayScreen after sending data
-                    ReceiveAndDisplayScreen();
+                //string clientId = ((IPEndPoint)withClient.RemoteEndPoint).Address.ToString();
+                //ClientConnect(true);
+                //connectedClients[clientId] = withClient;
+                //clients = new List<Socket>();
+                //clients.Add(withClient);
+                //clientConnections[clientId] = true;
+
+                //SCD.Reset();
+                //while (withClient.Connected)
+                //{
+                //    // Your existing code for sending screen data...
+
+                //    // Call ReceiveAndDisplayScreen after sending data
+                //    ReceiveAndDisplayScreen();
+                //}
+
+                while (true)
+                {
+                    withClient = ServerSocket.Accept();
+
+                    string clientId = ((IPEndPoint)withClient.RemoteEndPoint).Address.ToString();
+                    ClientConnect(true);
+                    connectedClients[clientId] = withClient;
+                    clients = new List<Socket>();
+                    clients.Add(withClient);
+                    clientConnections[clientId] = true;
+
+                    SCD.Reset();
+                    Thread receiveThread = new Thread(new ParameterizedThreadStart(ReceiveAndDisplayScreen));
+                    receiveThread.IsBackground = true;
+                    receiveThread.Start(withClient);
                 }
+
             }
             catch (Exception ex)
             {
@@ -190,108 +224,108 @@ namespace Server
             }
 
 
-            try
-            {
-                withClient = ServerSocket.EndAccept(ar);
-                SCD.Reset();
-                while (withClient.Connected)
-                {
-                    Thread.Sleep(int.Parse(lblDelay.Text));
+            //try
+            //{
+            //    //withClient = ServerSocket.EndAccept(ar);
+            //    SCD.Reset();
+            //    while (withClient.Connected)
+            //    {
+            //        Thread.Sleep(int.Parse(lblDelay.Text));
 
-                    ClientConnect(true);
-                    Stopwatch timeProcessed = Stopwatch.StartNew();
-                    Rectangle bounds = Rectangle.Empty;
+            //        ClientConnect(true);
+            //        Stopwatch timeProcessed = Stopwatch.StartNew();
+            //        Rectangle bounds = Rectangle.Empty;
 
-                    Data DT = new Data();
+            //        Data DT = new Data();
 
-                    Bitmap NewIM = ScreenCapture.CaptureSelectedScreen(desktopSelected, cbMouse.Checked);
-                    byte[] newIMdata = NewIM.ToByteArray(ImageFormat.Jpeg);
+            //        Bitmap NewIM = ScreenCapture.CaptureSelectedScreen(desktopSelected, cbMouse.Checked);
+            //        byte[] newIMdata = NewIM.ToByteArray(ImageFormat.Jpeg);
 
-                    if (cbAlgorithm.Checked)
-                    {
+            //        if (cbAlgorithm.Checked)
+            //        {
 
-                        Bitmap imageChanged = SCD.Check(NewIM, ref bounds);
+            //            Bitmap imageChanged = SCD.Check(NewIM, ref bounds);
 
-                        if (bounds != Rectangle.Empty)
-                        {
-                            if (cbLastFrame.Checked)
-                            {
-                                pcbFrame.Image = (Bitmap)imageChanged.Clone();
+            //            if (bounds != Rectangle.Empty)
+            //            {
+            //                if (cbLastFrame.Checked)
+            //                {
+            //                    pcbFrame.Image = (Bitmap)imageChanged.Clone();
 
-                                lblPercentOfIm.SafeInvoke(p =>
-                                {
-                                    p.Text = SCD.PercentOfImage + "%";
-                                });
-                            }
+            //                    lblPercentOfIm.SafeInvoke(p =>
+            //                    {
+            //                        p.Text = SCD.PercentOfImage + "%";
+            //                    });
+            //                }
 
-                            byte[] imageDATA = imageChanged.ToByteArray(ImageFormat.Jpeg);
-                            byte[] compImage = LZ4mm.LZ4Codec.Encode32(imageDATA, 0, imageDATA.Length);
+            //                byte[] imageDATA = imageChanged.ToByteArray(ImageFormat.Jpeg);
+            //                byte[] compImage = LZ4mm.LZ4Codec.Encode32(imageDATA, 0, imageDATA.Length);
 
-                            DT.comp = true;
-                            if (compImage.Length > imageDATA.Length)
-                            {
-                                DT.comp = false;
-                                compImage = imageDATA;
-                            }
+            //                DT.comp = true;
+            //                if (compImage.Length > imageDATA.Length)
+            //                {
+            //                    DT.comp = false;
+            //                    compImage = imageDATA;
+            //                }
 
-                            DT.type = 1;
-                            DT.dataSize = imageDATA.Length;
-                            DT.dataBytes = compImage;
-                            DT.bx = bounds.X;
-                            DT.by = bounds.Y;
-                            DT.bwidth = bounds.Width;
-                            DT.bheight = bounds.Height;
+            //                DT.type = 1;
+            //                DT.dataSize = imageDATA.Length;
+            //                DT.dataBytes = compImage;
+            //                DT.bx = bounds.X;
+            //                DT.by = bounds.Y;
+            //                DT.bwidth = bounds.Width;
+            //                DT.bheight = bounds.Height;
 
-                            UpdateStats(true, (float)compImage.Length, (float)imageDATA.Length,
-                                timeProcessed.ElapsedMilliseconds, newIMdata.Length);
-                            Log("Frame Sent Size Uncomp: " + (imageDATA.Length / 1024) + "KB Comp: " +
-                                (compImage.Length / 1024) + " KB MS: " +
-                                timeProcessed.ElapsedMilliseconds + " Rate: " +
-                                (((float)imageDATA.Length - (float)compImage.Length) / (float)imageDATA.Length) * 100f +
-                                "%");
-                        }
-                        else
-                        {
-                            UpdateStats(false, 0, 0, 0, newIMdata.Length);
-                            Log("No Change Detected No Frame Sent");
-                        }
-                    }
-                    else
-                    {
-                        SCD.Reset();
+            //                UpdateStats(true, (float)compImage.Length, (float)imageDATA.Length,
+            //                    timeProcessed.ElapsedMilliseconds, newIMdata.Length);
+            //                Log("Frame Sent Size Uncomp: " + (imageDATA.Length / 1024) + "KB Comp: " +
+            //                    (compImage.Length / 1024) + " KB MS: " +
+            //                    timeProcessed.ElapsedMilliseconds + " Rate: " +
+            //                    (((float)imageDATA.Length - (float)compImage.Length) / (float)imageDATA.Length) * 100f +
+            //                    "%");
+            //            }
+            //            else
+            //            {
+            //                UpdateStats(false, 0, 0, 0, newIMdata.Length);
+            //                Log("No Change Detected No Frame Sent");
+            //            }
+            //        }
+            //        else
+            //        {
+            //            SCD.Reset();
 
-                        DT.type = 2;
-                        DT.dataSize = newIMdata.Length;
-                        DT.dataBytes = newIMdata;
+            //            DT.type = 2;
+            //            DT.dataSize = newIMdata.Length;
+            //            DT.dataBytes = newIMdata;
 
-                        UpdateStats(false, 0, 0, 0, newIMdata.Length);
-                        Log("Full Screen Sent Size: " + (newIMdata.Length / 1024) + " KB.");
-                    }
+            //            UpdateStats(false, 0, 0, 0, newIMdata.Length);
+            //            Log("Full Screen Sent Size: " + (newIMdata.Length / 1024) + " KB.");
+            //        }
 
-                    Random rnd = new Random();
-                    int rndNum = rnd.Next(1, 101);
-                    if (rndNum <= int.Parse(lblPacketDrop.Text.TrimEnd('%')))
-                    {
-                        Log("Last Packet Dropped Failed to Sent.");
-                    }
-                    else
-                    {
-                        byte[] Packet = DT.Serialize();
-                        byte[] PacketSize = BitConverter.GetBytes(Packet.Length);
+            //        Random rnd = new Random();
+            //        int rndNum = rnd.Next(1, 101);
+            //        if (rndNum <= int.Parse(lblPacketDrop.Text.TrimEnd('%')))
+            //        {
+            //            Log("Last Packet Dropped Failed to Sent.");
+            //        }
+            //        else
+            //        {
+            //            byte[] Packet = DT.Serialize();
+            //            byte[] PacketSize = BitConverter.GetBytes(Packet.Length);
 
-                        withClient.Send(PacketSize);
-                        withClient.Send(Packet);
-                    }
-                    timeProcessed.Stop();
-                }
-            }
-            catch (Exception ex)
-            {
-                //Log("Exception Thrown: " + ex.Message);
-                ClientConnect(false);
-            }
-            if (withClient != null && ServerSocket != null)
-                ServerSocket.BeginAccept(BeginAccept_Callback, null);
+            //            withClient.Send(PacketSize);
+            //            withClient.Send(Packet);
+            //        }
+            //        timeProcessed.Stop();
+            //    }
+            //}
+            //catch (Exception ex)
+            //{
+            //    //Log("Exception Thrown: " + ex.Message);
+            //    ClientConnect(false);
+            //}
+            //if (withClient != null && ServerSocket != null)
+            //    ServerSocket.BeginAccept(BeginAccept_Callback, null);
 
         }
 
@@ -407,8 +441,10 @@ namespace Server
         }
 
 
-        private void ReceiveAndDisplayScreen()
+        private void ReceiveAndDisplayScreen(object clientObj)
         {
+            Socket withClient = (Socket)clientObj; // Cast the object parameter to Socket
+
             try
             {
                 while (withClient.Connected)
@@ -420,26 +456,23 @@ namespace Server
                     byte[] screenData = ReceiveData(dataLength); // Receive screen data
                     DisplayScreen(screenData); // Display received screen
 
-
                     try
                     {
-                        
+                        if (connectedClients.TryGetValue("192.168.100.75", out Socket destinationClient))
+                        {
+                            byte[] Packet = screenData;
+                            byte[] PacketSize = BitConverter.GetBytes(Packet.Length);
 
-                        byte[] Packet = screenData;
-                        byte[] PacketSize = BitConverter.GetBytes(Packet.Length);
+                            destinationClient.Send(PacketSize);
+                            destinationClient.Send(Packet);
+                        }
 
-                        withClient.Send(PacketSize);
-                        withClient.Send(Packet);
-                            
-                        
                     }
                     catch (Exception ex)
                     {
-                        //Log("Exception Thrown: " + ex.Message);
+                        // Handle exceptions
                         ClientConnect(false);
                     }
-
-
                 }
             }
             catch (Exception ex)
@@ -447,6 +480,7 @@ namespace Server
                 // Handle exceptions
             }
         }
+
 
         private byte[] ReceiveData(int dataLength)
         {
